@@ -1,0 +1,44 @@
+name: Build SnipTool
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build arm64 + arm64e dylib
+        run: |
+          xcrun -sdk iphoneos clang \
+            -arch arm64 -arch arm64e \
+            -miphoneos-version-min=14.0 \
+            -fobjc-arc -O2 \
+            -dynamiclib \
+            -framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore \
+            -install_name @rpath/SnipTool.dylib \
+            -o SnipTool.dylib SnipTool.m
+          brew install ldid
+          ldid -S SnipTool.dylib
+          lipo -info SnipTool.dylib
+          echo "arm64e pointer-auth instructions:"
+          otool -arch arm64e -tv SnipTool.dylib | grep -c -E "pacib|retab|autib|blraa|braa" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SnipTool-dylib
+          path: SnipTool.dylib
+
+      - name: Publish release (tải file dylib trực tiếp)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+          gh release create latest SnipTool.dylib --title "SnipTool dylib" --notes "arm64 + arm64e"
+
