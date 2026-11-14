@@ -21,7 +21,7 @@ jobs:
             -miphoneos-version-min=14.0 \
             -fobjc-arc -O2 \
             -dynamiclib \
-            -framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore \
+            -framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore -framework Vision \
             -install_name @rpath/SnipTool.dylib \
             -o SnipTool.dylib SnipTool.m
           brew install ldid
@@ -41,4 +41,3 @@ jobs:
         run: |
           gh release delete latest -y --cleanup-tag || true
           gh release create latest SnipTool.dylib --title "SnipTool dylib" --notes "arm64 + arm64e"
-
